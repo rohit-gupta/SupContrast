@@ -63,6 +63,11 @@ def parse_option():
     parser.add_argument('--ckpt', type=str, default='',
                         help='path to pre-trained model')
 
+    # adversarial attack
+    parser.add_argument('--epsilon', type=float, default=1.0,
+                        help='adversarial attack epsilon')
+
+
     opt = parser.parse_args()
 
     # set the path according to the environment
