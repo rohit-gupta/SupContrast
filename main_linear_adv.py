@@ -64,8 +64,8 @@ def parse_option():
                         help='path to pre-trained model')
 
     # adversarial attack
-    parser.add_argument('--epsilon', type=float, default=1.0,
-                        help='adversarial attack epsilon')
+    parser.add_argument('--epsilons', metavar='N', type=int, nargs='+',
+                        help='adversarial attack epsilons')
 
 
     opt = parser.parse_args()
@@ -254,7 +254,7 @@ def fgsm_attack(images, epsilon, gradients, means, stds):
     return perturbed_images
 
 
-def adveval(val_loader, model, classifier, criterion, opt):
+def adveval(val_loader, model, classifier, criterion, opt, epsilon):
     """adversarial robustness evaluation"""
     model.eval()
     classifier.eval()
@@ -301,7 +301,7 @@ def adveval(val_loader, model, classifier, criterion, opt):
         gradients = images.grad.data
 
         # Call FGSM Attack
-        perturbed_images = fgsm_attack(images, float(opt.epsilon)/255., gradients, torch.FloatTensor(means), torch.FloatTensor(stds))
+        perturbed_images = fgsm_attack(images, float(epsilon)/255., gradients, torch.FloatTensor(means), torch.FloatTensor(stds))
 
         # Adversarial prediction
         advoutput = classifier(model.encoder(perturbed_images))
@@ -361,9 +361,9 @@ def main():
 
     print('best accuracy: {:.2f}'.format(best_acc))
 
-    loss, acc, adv_acc = adveval(val_loader, model, best_classifier, criterion, opt)
-
-    print('adv accuracy: {:.2f}'.format(adv_acc))
+    for epsilon in opt.epsilons:
+        loss, acc, adv_acc = adveval(val_loader, model, best_classifier, criterion, opt, epsilon)
+        print('adv accuracy at epsilon {:.2f}: {:.2f}'.format(epsilon, adv_acc))
 
 
 
