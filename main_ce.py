@@ -379,8 +379,8 @@ def main():
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
 
     if opt.eval:
-        loss, val_acc = validate(val_loader, model, criterion, opt)
-        print('best accuracy: {:.2f}'.format(best_acc))
+        loss, acc = validate(val_loader, model, criterion, opt)
+        print('clean accuracy: {:.2f}'.format(acc))
         for epsilon in opt.epsilons:
             loss, acc, adv_acc = adveval(val_loader, model, criterion, opt, epsilon)
             print('adv accuracy at epsilon {:.2f}: {:.2f}'.format(epsilon, adv_acc))
