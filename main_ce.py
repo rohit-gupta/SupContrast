@@ -327,8 +327,7 @@ def adveval(val_loader, model, criterion, opt, epsilon):
         top1.update(acc1[0], bsz)
 
         # Zero out model gradients
-        model.encoder.zero_grad()
-        classifier.zero_grad()
+        model.zero_grad()
 
         # Calculate gradients of model in backward pass
         loss.backward(retain_graph=True)
