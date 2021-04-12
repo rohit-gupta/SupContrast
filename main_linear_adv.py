@@ -8,13 +8,15 @@ import math
 import torch
 import torch.backends.cudnn as cudnn
 
-from kornia.enhance.normalize import normalize, denormalize
+
 
 from main_ce import set_loader
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer
 from networks.resnet_big import SupConResNet, LinearClassifier
+
+from util import fgsm_attack
 
 try:
     import apex
@@ -229,29 +231,6 @@ def validate(val_loader, model, classifier, criterion, opt):
 
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
     return losses.avg, top1.avg
-
-
-# FGSM attack code
-def fgsm_attack(images, epsilon, gradients, means, stds):
-
-    # We should apply adversarial attack in unnormalized domain
-    images = denormalize(images, means, stds)
-    images = torch.clamp(images, 0, 1)
-
-    # Collect the element-wise sign of the data gradient
-    gradient_signs = gradients.sign().float()
-
-    # Create the perturbed image by adjusting each pixel of the input image
-    perturbed_images = images + epsilon*gradient_signs
-
-    # Adding clipping to maintain [0,1] range
-    perturbed_images = torch.clamp(perturbed_images, 0, 1)
-    
-    # Normalize the images back
-    perturbed_images = normalize(perturbed_images, means, stds)
-    
-    # Return the perturbed image
-    return perturbed_images
 
 
 def adveval(val_loader, model, classifier, criterion, opt, epsilon):
