@@ -188,6 +188,7 @@ def set_model(opt):
     if opt.eval:
         ckpt = torch.load(opt.ckpt, map_location='cpu')
         state_dict = ckpt['model']
+        state_dict = { k.replace("module.", ""):v for k, v in state_dict.items() }
         model.load_state_dict(state_dict, strict=True)
  
     # enable synchronized Batch Normalization
