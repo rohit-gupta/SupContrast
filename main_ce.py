@@ -64,7 +64,16 @@ def parse_option():
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
 
+    # for adversarial robustness experiments
+    parser.add_argument('--eval', action='store_true',
+                        help='evaluate pretrained model')
+    parser.add_argument('--ckpt', type=str, default='',
+                        help='path to pre-trained model')
+    parser.add_argument('--epsilons', metavar='N', type=int, nargs='+',
+                        help='adversarial attack epsilons')
+
     opt = parser.parse_args()
+
 
     # set the path according to the environment
     opt.data_folder = './datasets/'
@@ -171,6 +180,11 @@ def set_model(opt):
     model = SupCEResNet(name=opt.model, num_classes=opt.n_cls)
     criterion = torch.nn.CrossEntropyLoss()
 
+    if opt.eval:
+        ckpt = torch.load(opt.ckpt, map_location='cpu')
+        state_dict = ckpt['model']
+        model.load_state_dict(state_dict, strict=True)
+ 
     # enable synchronized Batch Normalization
     if opt.syncBN:
         model = apex.parallel.convert_syncbn_model(model)
@@ -277,6 +291,77 @@ def validate(val_loader, model, criterion, opt):
     return losses.avg, top1.avg
 
 
+def adveval(val_loader, model, criterion, opt, epsilon):
+    """adversarial robustness evaluation"""
+    model.eval()
+
+    if opt.dataset == 'cifar10':
+        means = [0.4914, 0.4822, 0.4465]
+        stds = [0.2023, 0.1994, 0.2010]
+    elif opt.dataset == 'cifar100':
+        means = [0.5071, 0.4867, 0.4408]
+        stds = [0.2675, 0.2565, 0.2761]
+
+    batch_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    advtop1 = AverageMeter()
+
+    # with torch.no_grad():
+    end = time.time()
+    for idx, (images, labels) in enumerate(val_loader):
+        images = images.float().cuda()
+        labels = labels.cuda()
+        bsz = labels.shape[0]
+
+        # for generating adversarial perturbation
+        images.requires_grad = True
+
+        # forward
+        output = model(images)
+        loss = criterion(output, labels)
+
+        # update metric
+        losses.update(loss.item(), bsz)
+        acc1, acc5 = accuracy(output, labels, topk=(1, 5))
+        top1.update(acc1[0], bsz)
+
+        # Zero out model gradients
+        model.encoder.zero_grad()
+        classifier.zero_grad()
+
+        # Calculate gradients of model in backward pass
+        loss.backward(retain_graph=True)
+
+        # Collect datagrad
+        gradients = images.grad.data
+
+        # Call FGSM Attack
+        perturbed_images = fgsm_attack(images, float(epsilon)/255., gradients, torch.FloatTensor(means), torch.FloatTensor(stds))
+
+        # Adversarial prediction
+        advoutput = model(perturbed_images)
+
+        advacc1, _ = accuracy(advoutput, labels, topk=(1, 5))
+        advtop1.update(advacc1[0], bsz)
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        if idx % opt.print_freq == 0:
+            print('Test: [{0}/{1}]\t'
+                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Acc@1 {top1.val:.3f} ({top1.avg:.3f})'
+                  'AdvAcc@1 {advtop1.val:.3f} ({advtop1.avg:.3f})'.format(
+                   idx, len(val_loader), batch_time=batch_time,
+                   loss=losses, top1=top1, advtop1=advtop1))
+
+    print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
+    return losses.avg, top1.avg, advtop1.avg
+
+
 def main():
     best_acc = 0
     opt = parse_option()
@@ -293,40 +378,48 @@ def main():
     # tensorboard
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
 
-    # training routine
-    for epoch in range(1, opt.epochs + 1):
-        adjust_learning_rate(opt, optimizer, epoch)
-
-        # train for one epoch
-        time1 = time.time()
-        loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, opt)
-        time2 = time.time()
-        print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
-
-        # tensorboard logger
-        logger.log_value('train_loss', loss, epoch)
-        logger.log_value('train_acc', train_acc, epoch)
-        logger.log_value('learning_rate', optimizer.param_groups[0]['lr'], epoch)
-
-        # evaluation
+    if opt.eval:
         loss, val_acc = validate(val_loader, model, criterion, opt)
-        logger.log_value('val_loss', loss, epoch)
-        logger.log_value('val_acc', val_acc, epoch)
+        print('best accuracy: {:.2f}'.format(best_acc))
+        for epsilon in opt.epsilons:
+            loss, acc, adv_acc = adveval(val_loader, model, criterion, opt, epsilon)
+            print('adv accuracy at epsilon {:.2f}: {:.2f}'.format(epsilon, adv_acc))
 
-        if val_acc > best_acc:
-            best_acc = val_acc
+    else:
+        # training routine
+        for epoch in range(1, opt.epochs + 1):
+            adjust_learning_rate(opt, optimizer, epoch)
 
-        if epoch % opt.save_freq == 0:
-            save_file = os.path.join(
-                opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
-            save_model(model, optimizer, opt, epoch, save_file)
+            # train for one epoch
+            time1 = time.time()
+            loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, opt)
+            time2 = time.time()
+            print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
-    # save the last model
-    save_file = os.path.join(
-        opt.save_folder, 'last.pth')
-    save_model(model, optimizer, opt, opt.epochs, save_file)
+            # tensorboard logger
+            logger.log_value('train_loss', loss, epoch)
+            logger.log_value('train_acc', train_acc, epoch)
+            logger.log_value('learning_rate', optimizer.param_groups[0]['lr'], epoch)
 
-    print('best accuracy: {:.2f}'.format(best_acc))
+            # evaluation
+            loss, val_acc = validate(val_loader, model, criterion, opt)
+            logger.log_value('val_loss', loss, epoch)
+            logger.log_value('val_acc', val_acc, epoch)
+
+            if val_acc > best_acc:
+                best_acc = val_acc
+
+            if epoch % opt.save_freq == 0:
+                save_file = os.path.join(
+                    opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
+                save_model(model, optimizer, opt, epoch, save_file)
+
+        # save the last model
+        save_file = os.path.join(
+            opt.save_folder, 'last.pth')
+        save_model(model, optimizer, opt, opt.epochs, save_file)
+
+        print('best accuracy: {:.2f}'.format(best_acc))
 
 
 if __name__ == '__main__':
