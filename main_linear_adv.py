@@ -131,8 +131,9 @@ def set_model(opt):
         classifier = classifier.cuda()
         criterion = criterion.cuda()
         cudnn.benchmark = True
+        state_dict = { k.replace("module.encoder.", "encoder.module."):v for k, v in state_dict.items() }
 
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
 
     return model, classifier, criterion
 
