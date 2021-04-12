@@ -15,7 +15,7 @@ from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer, save_model
 from networks.resnet_big import SupCEResNet
-from main_linear_adv import fgsm_attack
+from util import fgsm_attack
 
 try:
     import apex

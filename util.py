@@ -4,6 +4,29 @@ import math
 import numpy as np
 import torch
 import torch.optim as optim
+from kornia.enhance.normalize import normalize, denormalize
+
+# FGSM attack code
+def fgsm_attack(images, epsilon, gradients, means, stds):
+
+    # We should apply adversarial attack in unnormalized domain
+    images = denormalize(images, means, stds)
+    images = torch.clamp(images, 0, 1)
+
+    # Collect the element-wise sign of the data gradient
+    gradient_signs = gradients.sign().float()
+
+    # Create the perturbed image by adjusting each pixel of the input image
+    perturbed_images = images + epsilon*gradient_signs
+
+    # Adding clipping to maintain [0,1] range
+    perturbed_images = torch.clamp(perturbed_images, 0, 1)
+    
+    # Normalize the images back
+    perturbed_images = normalize(perturbed_images, means, stds)
+    
+    # Return the perturbed image
+    return perturbed_images
 
 
 class TwoCropTransform:
