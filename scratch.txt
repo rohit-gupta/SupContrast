@@ -1,0 +1,6 @@
+python main_ce.py --batch_size 1024 --learning_rate 0.8 --cosine --syncBN --trial 777
+
+
+python main_ce.py --batch_size 1024 --learning_rate 0.8 --cosine --syncBN --eval --epsilons 1 2 4 8 16 --ckpt /home/rohitg/selfsupadv/SupContrast/save/SupCon/cifar10_models/SupCE_cifar10_resnet50_lr_0.2_decay_0.0001_bsz_256_trial_0_cosine/ckpt_epoch_500.pth
+
+python main_linear_adv.py --batch_size 512 --learning_rate 1 --epsilon 1.0 --ckpt /home/rohitg/selfsupadv/SupContrast/save/SupCon/cifar10_models/SimCLR_cifar10_resnet50_lr_0.25_decay_0.0001_bsz_512_temp_0.5_trial_0_cosine_warm/ckpt_epoch_800.pth

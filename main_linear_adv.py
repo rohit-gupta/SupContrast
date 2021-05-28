@@ -69,6 +69,12 @@ def parse_option():
     parser.add_argument('--epsilons', metavar='N', type=int, nargs='+',
                         help='adversarial attack epsilons')
 
+    # for visualization
+    parser.add_argument('--eval', action='store_true',
+                        help='evaluate pretrained model')
+    parser.add_argument('--visualize', action='store_true',
+                        help='visualize features')
+
 
     opt = parser.parse_args()
 
@@ -202,6 +208,10 @@ def validate(val_loader, model, classifier, criterion, opt):
     losses = AverageMeter()
     top1 = AverageMeter()
 
+    if opt.viz:
+        allfeatures = []
+        alllabels = []
+
     with torch.no_grad():
         end = time.time()
         for idx, (images, labels) in enumerate(val_loader):
@@ -210,7 +220,8 @@ def validate(val_loader, model, classifier, criterion, opt):
             bsz = labels.shape[0]
 
             # forward
-            output = classifier(model.encoder(images))
+            features = model.encoder(images)
+            output = classifier(features)
             loss = criterion(output, labels)
 
             # update metric
@@ -229,8 +240,22 @@ def validate(val_loader, model, classifier, criterion, opt):
                       'Acc@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
                        idx, len(val_loader), batch_time=batch_time,
                        loss=losses, top1=top1))
+            
+
+            if opt.viz:
+                allfeatures += [features]
+                alllabels += [labels]
+
+
 
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
+
+
+    if opt.viz:
+        features = torch.cat(allfeatures,dim=0)
+        labels = torch.cat(alllabels,dim=0)
+        print(features.shape, labels.shape)
+
     return losses.avg, top1.avg
 
 
@@ -317,29 +342,33 @@ def main():
 
     # build model and criterion
     model, classifier, criterion = set_model(opt)
+    best_classifier = classifier
 
     # build optimizer
     optimizer = set_optimizer(opt, classifier)
 
-    # training routine
-    for epoch in range(1, opt.epochs + 1):
-        adjust_learning_rate(opt, optimizer, epoch)
+    if opt.eval:
+        loss, val_acc = validate(val_loader, model, classifier, criterion, opt) 
+    else:
+        # training routine
+        for epoch in range(1, opt.epochs + 1):
+            adjust_learning_rate(opt, optimizer, epoch)
 
-        # train for one epoch
-        time1 = time.time()
-        loss, acc = train(train_loader, model, classifier, criterion,
-                          optimizer, epoch, opt)
-        time2 = time.time()
-        print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}'.format(
-            epoch, time2 - time1, acc))
+            # train for one epoch
+            time1 = time.time()
+            loss, acc = train(train_loader, model, classifier, criterion,
+                              optimizer, epoch, opt)
+            time2 = time.time()
+            print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}'.format(
+                epoch, time2 - time1, acc))
 
-        # eval for one epoch
-        loss, val_acc = validate(val_loader, model, classifier, criterion, opt)
-        if val_acc > best_acc:
-            best_acc = val_acc
-            best_classifier = classifier
+            # eval for one epoch
+            loss, val_acc = validate(val_loader, model, classifier, criterion, opt)
+            if val_acc > best_acc:
+                best_acc = val_acc
+                best_classifier = classifier
 
-    print('best accuracy: {:.2f}'.format(best_acc))
+        print('best accuracy: {:.2f}'.format(best_acc))
 
     for epsilon in opt.epsilons:
         loss, acc, adv_acc = adveval(val_loader, model, best_classifier, criterion, opt, epsilon)
