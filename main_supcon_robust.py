@@ -62,6 +62,8 @@ def parse_option():
     # method
     parser.add_argument('--method', type=str, default='SupCon',
                         choices=['SupCon', 'SimCLR'], help='choose method')
+    parser.add_argument('--robustness', type=str, default='None',
+                        choices=['FreqPrior', 'Clust', 'Temp'], help='choose robustness method')
 
     # temperature
     parser.add_argument('--temp', type=float, default=0.07,
