@@ -281,9 +281,9 @@ def validate(val_loader, model, classifier, criterion, opt):
             features = torch.cat(allfeatures,dim=0)
             labels = torch.cat(alllabels,dim=0)
 
-            labels = labels.contiguous().view(-1, 1)
-            same_class_mask = torch.eq(labels, labels.T).float() - torch.eye(labels.shape[0]).float().cuda()
-            diff_class_mask = 1. - torch.eq(labels, labels.T).float() 
+            labelsc = labels.contiguous().view(-1, 1)
+            same_class_mask = torch.eq(labelsc, labelsc.T).float() - torch.eye(labelsc.shape[0]).float().cuda()
+            diff_class_mask = 1. - torch.eq(labelsc, labelsc.T).float() 
             #cosdist = nn.CosineSimilarity(dim=-1, eps=1e-6)
             #distances = cosdist(features.unsqueeze(0), features.unsqueeze(1))
             features = features.cpu().numpy()
@@ -297,6 +297,14 @@ def validate(val_loader, model, classifier, criterion, opt):
             diff_class_mask = diff_class_mask.cpu().numpy()
             mismatching_pairs_count = np.sum(diff_class_mask)
             diff_class_dist = np.sum(diff_class_mask*distances)/mismatching_pairs_count
+
+            labels = labels.cpu().numpy()
+
+            for x in range(10):
+                for y in range(10):
+                    print(x, y, np.mean(distances[labels == x, labels == y]))
+
+
 
 
 
