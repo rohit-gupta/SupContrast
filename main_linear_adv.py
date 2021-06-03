@@ -254,31 +254,34 @@ def validate(val_loader, model, classifier, criterion, opt):
     if opt.viz:
 
         # Features Visualization
-        features = torch.cat(allfeatures,dim=0).cpu().numpy()
-        labels = torch.cat(alllabels,dim=0).cpu().numpy()
-        print("dimensions:", features.shape, labels.shape)
-        from sklearn.manifold import TSNE
-        tsne = TSNE(n_components=2, random_state=42, init='pca', perplexity=50)
-        X_2d = tsne.fit_transform(features)
-        target_ids = range(10)
-        colors = 'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'
-        cifar10classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-        import matplotlib
-        matplotlib.use('Agg')
-        from matplotlib import pyplot as plt
-        f = plt.figure(figsize=(6, 5))
-        for i, c, label in zip(target_ids, colors, cifar10classes):
-            plt.scatter(X_2d[labels == i, 0], X_2d[labels == i, 1], c=c, label=label)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=5)
-        plt.xticks([])
-        plt.yticks([])
-        f.savefig(opt.ckpt.split("/")[-2].split("_")[0] +  "_test_pca_p50.pdf", bbox_inches='tight')
+        # features = torch.cat(allfeatures,dim=0).cpu().numpy()
+        # labels = torch.cat(alllabels,dim=0).cpu().numpy()
+        # print("dimensions:", features.shape, labels.shape)
+        # from sklearn.manifold import TSNE
+        # tsne = TSNE(n_components=2, random_state=42, init='pca', perplexity=50)
+        # X_2d = tsne.fit_transform(features)
+        # target_ids = range(10)
+        # colors = 'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'
+        # cifar10classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+        # import matplotlib
+        # matplotlib.use('Agg')
+        # from matplotlib import pyplot as plt
+        # f = plt.figure(figsize=(6, 5))
+        # for i, c, label in zip(target_ids, colors, cifar10classes):
+        #     plt.scatter(X_2d[labels == i, 0], X_2d[labels == i, 1], c=c, label=label)
+        # plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=5)
+        # plt.xticks([])
+        # plt.yticks([])
+        # f.savefig(opt.ckpt.split("/")[-2].split("_")[0] +  "_test_pca_p50.pdf", bbox_inches='tight')
 
         # Distance visualization
 
         features = torch.cat(allfeatures,dim=0)
         labels = torch.cat(alllabels,dim=0)
+
+        labels = labels.contiguous().view(-1, 1)
         mask = torch.eq(labels, labels.T).float()
+        
         print(mask.shape)
         print(mask[:10,:10])
         
