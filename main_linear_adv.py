@@ -275,20 +275,22 @@ def validate(val_loader, model, classifier, criterion, opt):
         # f.savefig(opt.ckpt.split("/")[-2].split("_")[0] +  "_test_pca_p50.pdf", bbox_inches='tight')
 
         # Distance visualization
+        from scipy.spatial.distance import pdist, squareform
+        with torch.no_grad():
+            features = torch.cat(allfeatures,dim=0)
+            labels = torch.cat(alllabels,dim=0)
 
-        features = torch.cat(allfeatures,dim=0)
-        labels = torch.cat(alllabels,dim=0)
+            labels = labels.contiguous().view(-1, 1)
+            mask = torch.eq(labels, labels.T).float() - torch.eye(labels.shape[0]).float().cuda()
 
-        labels = labels.contiguous().view(-1, 1)
-        mask = torch.eq(labels, labels.T).float() - torch.eye(labels.shape[0]).float().cuda()
+            #cosdist = nn.CosineSimilarity(dim=-1, eps=1e-6)
+            #distances = cosdist(features.unsqueeze(0), features.unsqueeze(1))
+            features = features.cpu().numpy()
+            distances = squareform(pdist(features, metric='cosine'))
 
-        cosdist = nn.CosineSimilarity(dim=-1, eps=1e-6)
-
-        distances = cosdist(features.unsqueeze(0), features.unsqueeze(1))
-
-        print(mask.shape, distances.shape)
-        print(mask[:10,:10])
-        print(distances[:10,:10])
+            print(mask.shape, distances.shape)
+            print(mask[:10,:10])
+            print(distances[:10,:10])
         
 
 
