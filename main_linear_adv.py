@@ -300,8 +300,8 @@ def validate(val_loader, model, classifier, criterion, opt):
 
 
 
-            print(mask.shape, distances.shape)
-            print(mask[:10,:10])
+            print(same_class_mask.shape, distances.shape)
+            print(same_class_mask[:10,:10])
             print(distances[:10,:10])
 
             print(same_class_dist, diff_class_dist)
