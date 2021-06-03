@@ -8,6 +8,7 @@ import math
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn 
+import numpy as np
 
 
 from main_ce import set_loader
@@ -281,16 +282,29 @@ def validate(val_loader, model, classifier, criterion, opt):
             labels = torch.cat(alllabels,dim=0)
 
             labels = labels.contiguous().view(-1, 1)
-            mask = torch.eq(labels, labels.T).float() - torch.eye(labels.shape[0]).float().cuda()
-
+            same_class_mask = torch.eq(labels, labels.T).float() - torch.eye(labels.shape[0]).float().cuda()
+            diff_class_mask = 1. - torch.eq(labels, labels.T).float() 
             #cosdist = nn.CosineSimilarity(dim=-1, eps=1e-6)
             #distances = cosdist(features.unsqueeze(0), features.unsqueeze(1))
             features = features.cpu().numpy()
             distances = squareform(pdist(features, metric='cosine'))
 
+            same_class_mask = same_class_mask.cpu().numpy()
+            matching_pairs_count = np.sum(same_class_mask)
+            same_class_dist = np.sum(same_class_mask*distances)/matching_pairs_count
+
+
+            diff_class_mask = diff_class_mask.cpu().numpy()
+            mismatching_pairs_count = np.sum(diff_class_mask)
+            diff_class_dist = np.sum(diff_class_mask*distances)/mismatching_pairs_count
+
+
+
             print(mask.shape, distances.shape)
             print(mask[:10,:10])
             print(distances[:10,:10])
+
+            print(same_class_dist, diff_class_dist)
         
 
 
