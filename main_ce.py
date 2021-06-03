@@ -160,6 +160,8 @@ def set_loader(opt):
         val_dataset = datasets.CIFAR10(root=opt.data_folder,
                                        train=False,
                                        transform=val_transform)
+        #val_dataset = datasets.CIFAR10(root=opt.data_folder,
+        #                               transform=val_transform)
     elif opt.dataset == 'cifar100':
         train_dataset = datasets.CIFAR100(root=opt.data_folder,
                                           transform=train_transform,
