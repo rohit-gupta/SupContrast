@@ -280,7 +280,7 @@ def validate(val_loader, model, classifier, criterion, opt):
         labels = torch.cat(alllabels,dim=0)
 
         labels = labels.contiguous().view(-1, 1)
-        mask = torch.eq(labels, labels.T).float() - torch.eye(labels.shape[0]).float()
+        mask = torch.eq(labels, labels.T).float() - torch.eye(labels.shape[0]).float().cuda()
 
         cosdist = nn.CosineSimilarity(dim=-1, eps=1e-6)
 
