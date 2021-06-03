@@ -7,7 +7,7 @@ import math
 
 import torch
 import torch.backends.cudnn as cudnn
-
+import torch.nn as nn 
 
 
 from main_ce import set_loader
