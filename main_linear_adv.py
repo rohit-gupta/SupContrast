@@ -252,6 +252,8 @@ def validate(val_loader, model, classifier, criterion, opt):
 
 
     if opt.viz:
+
+        # Features Visualization
         features = torch.cat(allfeatures,dim=0).cpu().numpy()
         labels = torch.cat(alllabels,dim=0).cpu().numpy()
         print("dimensions:", features.shape, labels.shape)
@@ -270,7 +272,15 @@ def validate(val_loader, model, classifier, criterion, opt):
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=5)
         plt.xticks([])
         plt.yticks([])
-        f.savefig(opt.ckpt.split("/")[-2] +  "_test_pca_p50.pdf", bbox_inches='tight')
+        f.savefig(opt.ckpt.split("/")[-2].split("_")[0] +  "_test_pca_p50.pdf", bbox_inches='tight')
+
+        # Distance visualization
+
+        features = torch.cat(allfeatures,dim=0)
+        labels = torch.cat(alllabels,dim=0)
+        mask = torch.eq(labels, labels.T).float()
+        print(mask.shape)
+        print(mask[:10,:10])
         
 
 
