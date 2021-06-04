@@ -302,14 +302,14 @@ def validate(val_loader, model, classifier, criterion, opt):
 
             for x in range(10):
                 for y in range(10):
-                    # if x != y:
-                    print(x, y, np.mean(distances[np.ix_((labels == x), (labels == y))]))
+                    if x != y:
+                        print(x, y, np.mean(distances[np.ix_((labels == x), (labels == y))]))
                     #print(x, y, np.sum((labels == x)), np.sum((labels == y)), (distances[(labels == x), (labels == y)]).size)
 
-                    # else:
-                    #     count = np.sum(labels == x)*np.sum(labels == x) - np.sum(labels == x)
-                    #     print(x, y, count)
-                    #     print(x, y, np.sum((distances*same_class_mask)[labels == x, labels == y])/count)
+                    else:
+                        count = np.sum(labels == x)*np.sum(labels == y) - np.sum(labels == x)
+                        print(x, y, count)
+                        print(x, y, np.sum(distances[np.ix_(labels == x, labels == y)])/count)
 
 
 
