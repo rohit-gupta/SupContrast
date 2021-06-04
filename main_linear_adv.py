@@ -263,10 +263,10 @@ def validate(val_loader, model, classifier, criterion, opt):
         # X_2d = tsne.fit_transform(features)
         # target_ids = range(10)
         # colors = 'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'
-        # cifar10classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-        # import matplotlib
-        # matplotlib.use('Agg')
-        # from matplotlib import pyplot as plt
+        cifar10classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+        import matplotlib
+        matplotlib.use('Agg')
+        from matplotlib import pyplot as plt
         # f = plt.figure(figsize=(6, 5))
         # for i, c, label in zip(target_ids, colors, cifar10classes):
         #     plt.scatter(X_2d[labels == i, 0], X_2d[labels == i, 1], c=c, label=label)
@@ -300,16 +300,23 @@ def validate(val_loader, model, classifier, criterion, opt):
 
             labels = labels.cpu().numpy()
 
+            avg_dists = np.zeros((10, 10))
+
             for x in range(10):
                 for y in range(10):
                     if x != y:
-                        print(x, y, np.mean(distances[np.ix_((labels == x), (labels == y))]))
+                        avg_dists[x,y] = np.mean(distances[np.ix_((labels == x), (labels == y))])
+                        
                     #print(x, y, np.sum((labels == x)), np.sum((labels == y)), (distances[(labels == x), (labels == y)]).size)
 
                     else:
                         count = np.sum(labels == x)*np.sum(labels == y) - np.sum(labels == x)
-                        print(x, y, count)
-                        print(x, y, np.sum(distances[np.ix_(labels == x, labels == y)])/count)
+                        # print(x, y, count)
+                        avg_dists[x,y] = np.sum(distances[np.ix_(labels == x, labels == y)])/count
+
+                    print(x, y, avg_dists[x,y])
+
+                        
 
 
 
@@ -320,6 +327,30 @@ def validate(val_loader, model, classifier, criterion, opt):
             print(distances[:10,:10])
 
             print(same_class_dist, diff_class_dist)
+
+            fig, ax = plt.subplots()
+            im = ax.imshow(avg_dists)
+
+            # We want to show all ticks...
+            ax.set_xticks(np.arange(len(cifar10classes)))
+            ax.set_yticks(np.arange(len(cifar10classes)))
+            # ... and label them with the respective list entries
+            ax.set_xticklabels(cifar10classes)
+            ax.set_yticklabels(cifar10classes)
+
+            # Rotate the tick labels and set their alignment.
+            plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+                     rotation_mode="anchor")
+
+            # Loop over data dimensions and create text annotations.
+            for i in range(len(cifar10classes)):
+                for j in range(len(cifar10classes)):
+                    text = ax.text(j, i, avg_dists[i, j],
+                                   ha="center", va="center", color="w")
+
+            ax.set_title()
+            fig.tight_layout()
+            fig.savefig(opt.ckpt.split("/")[-2].split("_")[0] +  "_heatmap.pdf", bbox_inches='tight')
         
 
 
