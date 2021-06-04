@@ -316,11 +316,8 @@ def validate(val_loader, model, classifier, criterion, opt):
 
                     print(x, y, avg_dists[x,y])
 
-                        
 
-
-
-
+            avg_dists = np.around(avg_dists, 2)
 
             print(same_class_mask.shape, distances.shape)
             print(same_class_mask[:10,:10])
