@@ -287,7 +287,7 @@ def validate(val_loader, model, classifier, criterion, opt):
             #cosdist = nn.CosineSimilarity(dim=-1, eps=1e-6)
             #distances = cosdist(features.unsqueeze(0), features.unsqueeze(1))
             features = features.cpu().numpy()
-            distances = 1 - squareform(pdist(features, metric='cosine'))
+            distances = squareform(pdist(features, metric='cosine'))
 
             same_class_mask = same_class_mask.cpu().numpy()
             matching_pairs_count = np.sum(same_class_mask)
@@ -303,8 +303,8 @@ def validate(val_loader, model, classifier, criterion, opt):
             for x in range(10):
                 for y in range(10):
                     # if x != y:
-                    print(x, y, np.mean(distances[(labels == x), (labels == y)]))
-                    print(x, y, np.sum((labels == x)), np.sum((labels == y)), (distances[(labels == x), (labels == y)]).size)
+                    print(x, y, np.mean(distances[np.ix_((labels == x), (labels == y))]))
+                    #print(x, y, np.sum((labels == x)), np.sum((labels == y)), (distances[(labels == x), (labels == y)]).size)
 
                     # else:
                     #     count = np.sum(labels == x)*np.sum(labels == x) - np.sum(labels == x)
