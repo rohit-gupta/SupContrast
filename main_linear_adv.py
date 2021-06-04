@@ -304,6 +304,7 @@ def validate(val_loader, model, classifier, criterion, opt):
                 for y in range(10):
                     # if x != y:
                     print(x, y, np.mean(distances[(labels == x), (labels == y)]))
+                    print(x, y, np.sum((labels == x)), np.sum((labels == y)))
                     # else:
                     #     count = np.sum(labels == x)*np.sum(labels == x) - np.sum(labels == x)
                     #     print(x, y, count)
