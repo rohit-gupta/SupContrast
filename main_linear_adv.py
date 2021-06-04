@@ -348,7 +348,7 @@ def validate(val_loader, model, classifier, criterion, opt):
                     text = ax.text(j, i, avg_dists[i, j],
                                    ha="center", va="center", color="w")
 
-            ax.set_title()
+            ax.set_title(opt.ckpt.split("/")[-2].split("_")[0].replace("SupCon", "Supervised Contrastive"))
             fig.tight_layout()
             fig.savefig(opt.ckpt.split("/")[-2].split("_")[0] +  "_heatmap.pdf", bbox_inches='tight')
         
